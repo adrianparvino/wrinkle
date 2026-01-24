@@ -25,8 +25,12 @@ pub enum Hotkey {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-    pub width: i32,
-    pub height: i32,
+    pub tall_width: i32,
+    pub tall_height: i32,
+    pub thin_width: i32,
+    pub thin_height: i32,
+    pub wide_width: i32,
+    pub wide_height: i32,
     pub ruler: i32,
     pub thin: Option<KeyFilter>,
     pub tall: Option<KeyFilter>,
@@ -36,8 +40,12 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Self {
-            height: 16384,
-            width: 384,
+            tall_height: 16384,
+            tall_width: 384,
+            thin_height: 1800,
+            thin_width: 400,
+            wide_height: 300,
+            wide_width: 1920,
             ruler: 19,
             thin: Some(KeyFilter {
                 char: 'h',

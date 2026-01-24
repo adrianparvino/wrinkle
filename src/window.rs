@@ -61,8 +61,8 @@ impl Window {
 
         let hotkeys = Column::with_children(
             [
-                ("Thin", Hotkey::Thin),
                 ("Tall", Hotkey::Tall),
+                ("Thin", Hotkey::Thin),
                 ("Wide", Hotkey::Wide),
             ]
             .into_iter()

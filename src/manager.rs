@@ -9,7 +9,11 @@ use windows::{
     core::BOOL,
 };
 
-use crate::{config::Config, instance::MinecraftInstance, projector::Projector};
+use crate::{
+    config::{Config, Hotkey},
+    instance::MinecraftInstance,
+    projector::Projector,
+};
 use crate::{
     instance::MinecraftInstanceListener,
     keylogger::{KeyEvent, KeyLogger},
@@ -19,8 +23,8 @@ pub struct Manager {
     pub instance: Arc<ArcSwapOption<MinecraftInstance>>,
     pub projector: Projector,
     pub key_channel: mpsc::Receiver<KeyEvent>,
-    pub is_tall: bool,
     pub config: Arc<ArcSwap<Config>>,
+    pub state: Option<Hotkey>,
 }
 
 impl Manager {
@@ -82,18 +86,18 @@ impl Manager {
             key_channel: rx,
             projector,
             instance,
-            is_tall: false,
+            state: None,
             config,
         }
     }
 
-    fn toggle_thin(&mut self) {
+    fn update_state(&mut self, hotkey: Hotkey) {
         let config = *self.config.as_ref().load_full();
         let Some(instance) = self.instance.load_full() else {
             return;
         };
 
-        if self.is_tall {
+        if self.state == Some(hotkey) {
             let lpmi = instance.get_monitor_info();
 
             instance.set_window_pos(
@@ -102,19 +106,72 @@ impl Manager {
                 lpmi.rcMonitor.right - lpmi.rcMonitor.left,
                 lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
             );
-        } else {
+
+            self.state = None;
+        } else if hotkey == Hotkey::Tall {
             let lpmi = instance.get_monitor_info();
 
             let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
             let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config { width, height, .. } = config;
+            let Config {
+                tall_width,
+                tall_height,
+                ..
+            } = config;
 
-            instance.set_window_pos(center_x - width / 2, center_y - height / 2, width, height);
+            instance.set_window_pos(
+                center_x - tall_width / 2,
+                center_y - tall_height / 2,
+                tall_width,
+                tall_height,
+            );
+
+            self.state = Some(Hotkey::Tall);
+        } else if hotkey == Hotkey::Thin {
+            let lpmi = instance.get_monitor_info();
+
+            let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
+            let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+
+            let Config {
+                thin_width,
+                thin_height,
+                ..
+            } = config;
+
+            instance.set_window_pos(
+                center_x - thin_width / 2,
+                center_y - thin_height / 2,
+                thin_width,
+                thin_height,
+            );
+
+            self.state = Some(Hotkey::Thin);
+        } else if hotkey == Hotkey::Wide {
+            let lpmi = instance.get_monitor_info();
+
+            let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
+            let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+
+            let Config {
+                wide_width,
+                wide_height,
+                ..
+            } = config;
+
+            instance.set_window_pos(
+                center_x - wide_width / 2,
+                center_y - wide_height / 2,
+                wide_width,
+                wide_height,
+            );
+
+            self.state = Some(Hotkey::Wide);
         }
 
-        self.is_tall = !self.is_tall;
-        self.projector.set_visibility(self.is_tall);
+        self.projector
+            .set_visibility(self.state == Some(Hotkey::Tall));
     }
 
     pub async fn run(&mut self, tx: mpsc::Sender<KeyEvent>) {
@@ -129,10 +186,18 @@ impl Manager {
             }
 
             let config = **self.config.as_ref().load();
-            if let Some(thin) = config.thin
+            if let Some(tall) = config.tall
+                && tall.test(ev)
+            {
+                self.update_state(Hotkey::Tall);
+            } else if let Some(thin) = config.thin
                 && thin.test(ev)
             {
-                self.toggle_thin();
+                self.update_state(Hotkey::Thin);
+            } else if let Some(wide) = config.wide
+                && wide.test(ev)
+            {
+                self.update_state(Hotkey::Wide);
             }
         }
     }
