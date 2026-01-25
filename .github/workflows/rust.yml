@@ -24,4 +24,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: wrinkle.exe
-        path: target/debug/wrinkle
+        path: target/debug/wrinkle.exe
