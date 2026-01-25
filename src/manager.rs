@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use arc_swap::{ArcSwap, ArcSwapOption};
-use tokio::sync::{mpsc, oneshot};
+use futures::{SinkExt, StreamExt};
+use futures_channel::{mpsc, oneshot};
 use windows::{
     Win32::UI::WindowsAndMessaging::{
         DispatchMessageW, GetMessageW, MSG, SetProcessDPIAware, TranslateMessage,
@@ -174,9 +175,9 @@ impl Manager {
             .set_visibility(self.state == Some(Hotkey::Tall));
     }
 
-    pub async fn run(&mut self, tx: mpsc::Sender<KeyEvent>) {
-        while let Some(ev) = self.key_channel.recv().await {
-            let _ = tx.try_send(ev);
+    pub async fn run(&mut self, mut tx: mpsc::Sender<KeyEvent>) {
+        while let Some(ev) = self.key_channel.next().await {
+            let _ = tx.send(ev).await;
 
             let Some(instance) = self.instance.load_full() else {
                 continue;

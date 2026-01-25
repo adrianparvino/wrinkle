@@ -5,25 +5,24 @@ edition = "2024"
 
 [dependencies]
 arc-swap = "1.8.0"
-config = "0.15.19"
 directories = "6.0.0"
 figment = { version = "0.10.19", features = ["toml"] }
 futures = "0.3.31"
-iced = { version = "0.14.0", features = ["advanced", "tokio"] }
+futures-channel = "0.3.31"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_toml = "0.0.1"
-tokio = { version = "1.49.0", features = ["sync"] }
-tokio-stream = "0.1.18"
-toml = "0.9.11"
+toml = "0.8.23"
 widestring = "1.2.1"
 windows = { version = "0.62.2", features = ["Win32_Graphics_Gdi", "Win32_Graphics_GdiPlus", "Win32_System_LibraryLoader", "Win32_UI_Input", "Win32_UI_WindowsAndMessaging"] }
-winit = "0.30.12"
-xdg = "3.0.0"
+
+[dependencies.iced]
+version = "0.14.0"
+default-features = false
+features =  ["tiny-skia", "crisp", "thread-pool", "smol"]
 
 [profile.release]
 opt-level = "z"
 strip = true
-lto = true
+lto = "thin"
 codegen-units = 1
 panic = "abort"
 

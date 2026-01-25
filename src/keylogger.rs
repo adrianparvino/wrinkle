@@ -4,8 +4,8 @@ use std::{
     sync::LazyLock,
 };
 
+use futures_channel::mpsc;
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc;
 use windows::{
     Win32::{
         Foundation::{HWND, LPARAM, LRESULT, WPARAM},
@@ -216,7 +216,7 @@ impl WndClass for KeyLoggerWnd {
                             }
                             ev => {
                                 if let Some(char) = translate(ev) {
-                                    tx.blocking_send(KeyEvent {
+                                    tx.start_send(KeyEvent {
                                         char,
                                         modifiers: *modifiers,
                                     })

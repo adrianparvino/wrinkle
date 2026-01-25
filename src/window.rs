@@ -4,8 +4,6 @@ use arc_swap::ArcSwap;
 use iced::alignment::Vertical;
 use iced::widget::{Column, button, row, text};
 use iced::{Element, Length, Size, Subscription};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 
 use crate::config::{Config, Hotkey};
 use crate::keylogger::KeyEvent;
@@ -95,14 +93,10 @@ impl Window {
     fn subscription(&self) -> Subscription<Message> {
         Subscription::run_with(Weak::into_raw(Arc::downgrade(&self.config)), |config| {
             let config = unsafe { Weak::from_raw(*config).upgrade().unwrap() };
-            let (tx, rx) = mpsc::channel(100);
-
-            tokio::task::spawn(async {
+            iced::stream::channel(100, async |tx| {
                 let mut manager = Manager::spawn(config).await;
                 manager.run(tx).await;
-            });
-
-            ReceiverStream::new(rx)
+            })
         })
         .map(|ev| Message::KeyEvent(ev))
     }
