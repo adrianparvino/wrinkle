@@ -4,16 +4,15 @@ use windows::Win32::Foundation::{COLORREF, FALSE, HWND, LPARAM, LRESULT, RECT, W
 use windows::Win32::Graphics::Gdi::{
     BeginPaint, CLIP_DEFAULT_PRECIS, CreateFontW, CreateSolidBrush, DEFAULT_CHARSET,
     DEFAULT_QUALITY, DT_CENTER, DT_NOCLIP, DT_SINGLELINE, DT_VCENTER, DrawTextA, EndPaint,
-    FIXED_PITCH, FW_SEMIBOLD, FillRect, GetDC, HBRUSH, MM_TEXT, OUT_DEFAULT_PRECIS, PAINTSTRUCT,
-    RDW_INVALIDATE, RedrawWindow, ReleaseDC, SRCCOPY, SelectObject, SetBkMode, SetMapMode,
-    SetTextColor, StretchBlt, TRANSPARENT,
+    FIXED_PITCH, FW_SEMIBOLD, FillRect, GetDC, HBRUSH, InvalidateRect, MM_TEXT, OUT_DEFAULT_PRECIS,
+    PAINTSTRUCT, ReleaseDC, SRCCOPY, SelectObject, SetBkMode, SetMapMode, SetTextColor, StretchBlt,
+    TRANSPARENT,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
     DefWindowProcW, GWL_HWNDPARENT, GWLP_USERDATA, GetWindowLongPtrW, GetWindowRect,
-    RegisterClassExW, SW_HIDE, SW_SHOW, SWP_FRAMECHANGED, SWP_SHOWWINDOW, SetTimer,
-    SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_PAINT, WM_SHOWWINDOW, WM_TIMER, WNDCLASSEXW,
-    WS_EX_TOPMOST, WS_POPUP,
+    RegisterClassExW, SW_HIDE, SW_SHOW, SWP_FRAMECHANGED, SWP_SHOWWINDOW, SetWindowLongPtrW,
+    SetWindowPos, ShowWindow, WM_PAINT, WM_SHOWWINDOW, WNDCLASSEXW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::PCWSTR;
 
@@ -255,11 +254,6 @@ impl WndClass for ProjectorWindow {
     fn on_message(&mut self, hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         unsafe {
             match (msg, wparam) {
-                (WM_TIMER, WPARAM(1)) => {
-                    RedrawWindow(Some(hwnd), None, None, RDW_INVALIDATE).unwrap();
-
-                    LRESULT(0)
-                }
                 (WM_SHOWWINDOW, _) => {
                     let Some(instance) = self.instance.load_full() else {
                         return DefWindowProcW(hwnd, msg, wparam, lparam);
@@ -329,6 +323,8 @@ impl WndClass for ProjectorWindow {
                     ReleaseDC(Some(instance.hwnd), source_hdc);
                     EndPaint(hwnd, &raw const ps).unwrap();
 
+                    InvalidateRect(Some(hwnd), None, true).unwrap();
+
                     LRESULT(0)
                 }
 
@@ -367,10 +363,6 @@ impl Projector {
         .unwrap();
 
         ruler.set_owner(projector_wnd);
-
-        unsafe {
-            SetTimer(Some(projector_wnd), 1, 10, None);
-        }
 
         Self {
             hwnd: projector_wnd,
