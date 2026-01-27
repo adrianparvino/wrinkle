@@ -10,6 +10,7 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 use std::io::Write;
+use windows::Win32::Foundation::COLORREF;
 
 use crate::keylogger::{KeyFilter, Modifiers};
 
@@ -24,47 +25,84 @@ pub enum Hotkey {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Resolution {
+    pub height: i32,
+    pub width: i32,
+}
+
+impl Resolution {
+    fn new(width: impl Into<i32>, height: impl Into<i32>) -> Self {
+        Self {
+            width: width.into(),
+            height: height.into(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Color(pub u8, pub u8, pub u8);
+
+impl From<Color> for COLORREF {
+    fn from(color: Color) -> Self {
+        let r = color.0 as u32;
+        let g = color.1 as u32;
+        let b = color.2 as u32;
+
+        COLORREF(b << 16 | g << 8 | r)
+    }
+}
+impl From<Color> for iced::Color {
+    fn from(color: Color) -> Self {
+        iced::Color::from_rgb8(color.0, color.1, color.2)
+    }
+}
+
+impl From<iced::Color> for Color {
+    fn from(color: iced::Color) -> Self {
+        let [r, g, b, _] = color.into_rgba8();
+
+        Color(r, g, b)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-    pub tall_width: i32,
-    pub tall_height: i32,
-    pub thin_width: i32,
-    pub thin_height: i32,
-    pub wide_width: i32,
-    pub wide_height: i32,
+    pub thin: Resolution,
+    pub tall: Resolution,
+    pub wide: Resolution,
     pub ruler: i32,
-    pub thin: Option<KeyFilter>,
-    pub tall: Option<KeyFilter>,
-    pub wide: Option<KeyFilter>,
+    pub thin_key: Option<KeyFilter>,
+    pub tall_key: Option<KeyFilter>,
+    pub wide_key: Option<KeyFilter>,
+    pub colors: [Color; 2],
 }
 
 impl Default for Config {
     fn default() -> Config {
         Self {
-            tall_height: 16384,
-            tall_width: 384,
-            thin_height: 1800,
-            thin_width: 400,
-            wide_height: 300,
-            wide_width: 1920,
+            tall: Resolution::new(384, 16384),
+            thin: Resolution::new(400, 1800),
+            wide: Resolution::new(1920, 300),
             ruler: 19,
-            thin: Some(KeyFilter {
+            thin_key: Some(KeyFilter {
                 char: 'h',
                 modifiers: Some(Modifiers::default()),
             }),
-            tall: Some(KeyFilter {
+            tall_key: Some(KeyFilter {
                 char: 'h',
                 modifiers: Some(Modifiers {
                     shift: true,
                     ..Modifiers::default()
                 }),
             }),
-            wide: Some(KeyFilter {
+            wide_key: Some(KeyFilter {
                 char: 'h',
                 modifiers: Some(Modifiers {
                     ctrl: true,
                     ..Modifiers::default()
                 }),
             }),
+            colors: [Color(91, 207, 250), Color(245, 171, 185)],
         }
     }
 }
@@ -99,13 +137,13 @@ impl Config {
     pub fn set_hotkey(mut self, hotkey: Hotkey, key_filter: Option<KeyFilter>) -> Self {
         match hotkey {
             Hotkey::Thin => {
-                self.thin = key_filter;
+                self.thin_key = key_filter;
             }
             Hotkey::Tall => {
-                self.tall = key_filter;
+                self.tall_key = key_filter;
             }
             Hotkey::Wide => {
-                self.wide = key_filter;
+                self.wide_key = key_filter;
             }
         }
         self
@@ -113,9 +151,9 @@ impl Config {
 
     pub fn get_hotkey(&self, hotkey: Hotkey) -> Option<KeyFilter> {
         match hotkey {
-            Hotkey::Thin => self.thin,
-            Hotkey::Tall => self.tall,
-            Hotkey::Wide => self.wide,
+            Hotkey::Thin => self.thin_key,
+            Hotkey::Tall => self.tall_key,
+            Hotkey::Wide => self.wide_key,
         }
     }
 }

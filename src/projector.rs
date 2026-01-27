@@ -3,16 +3,16 @@ use std::sync::{Arc, LazyLock};
 use windows::Win32::Foundation::{COLORREF, FALSE, HWND, LPARAM, LRESULT, RECT, WPARAM};
 use windows::Win32::Graphics::Gdi::{
     BeginPaint, CLIP_DEFAULT_PRECIS, CreateFontW, CreateSolidBrush, DEFAULT_CHARSET,
-    DEFAULT_QUALITY, DT_CENTER, DT_NOCLIP, DT_SINGLELINE, DT_VCENTER, DrawTextA, EndPaint,
-    FIXED_PITCH, FW_SEMIBOLD, FillRect, GetDC, HBRUSH, InvalidateRect, MM_TEXT, OUT_DEFAULT_PRECIS,
-    PAINTSTRUCT, ReleaseDC, SRCCOPY, SelectObject, SetBkMode, SetMapMode, SetTextColor, StretchBlt,
-    TRANSPARENT,
+    DEFAULT_QUALITY, DT_CENTER, DT_NOCLIP, DT_SINGLELINE, DT_VCENTER, DeleteObject, DrawTextA,
+    EndPaint, FIXED_PITCH, FW_SEMIBOLD, FillRect, GetDC, HBRUSH, InvalidateRect, MM_TEXT,
+    OUT_DEFAULT_PRECIS, PAINTSTRUCT, ReleaseDC, SRCCOPY, SelectObject, SetBkMode, SetMapMode,
+    SetTextColor, StretchBlt, TRANSPARENT,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    DefWindowProcW, GWL_HWNDPARENT, GWLP_USERDATA, GetWindowLongPtrW, GetWindowRect,
-    RegisterClassExW, SW_HIDE, SW_SHOW, SWP_FRAMECHANGED, SWP_SHOWWINDOW, SetWindowLongPtrW,
-    SetWindowPos, ShowWindow, WM_PAINT, WM_SHOWWINDOW, WNDCLASSEXW, WS_EX_TOPMOST, WS_POPUP,
+    DefWindowProcW, GWL_HWNDPARENT, GetWindowRect, RegisterClassExW, SW_HIDE, SW_SHOW,
+    SWP_FRAMECHANGED, SWP_SHOWWINDOW, SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_PAINT,
+    WM_SHOWWINDOW, WNDCLASSEXW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::PCWSTR;
 
@@ -43,8 +43,6 @@ pub struct Ruler {
 pub struct RulerWindow {
     config: Arc<ArcSwap<Config>>,
     white: HBRUSH,
-    purple: HBRUSH,
-    lavender: HBRUSH,
 }
 
 impl WndClass for RulerWindow {
@@ -71,12 +69,6 @@ impl WndClass for RulerWindow {
         unsafe {
             match (msg, wparam) {
                 (WM_PAINT, _) => {
-                    let Some(state) =
-                        (GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut RulerWindow).as_mut()
-                    else {
-                        return LRESULT(1);
-                    };
-
                     let mut ps = PAINTSTRUCT::default();
                     let ruler_hdc = BeginPaint(hwnd, &raw mut ps);
 
@@ -104,11 +96,12 @@ impl WndClass for RulerWindow {
                             bottom: height,
                             right: width / 2,
                         } as *const RECT,
-                        state.white,
+                        self.white,
                     );
 
-                    let config = *state.config.load_full();
+                    let config = *self.config.load_full();
 
+                    let brushes = config.colors.map(|color| CreateSolidBrush(color.into()));
                     for i in -config.ruler..config.ruler {
                         let rect = &mut RECT {
                             left: width / 2 + (i) * width / rect_width,
@@ -117,15 +110,10 @@ impl WndClass for RulerWindow {
                             right: width / 2 + (i + 1) * width / rect_width,
                         } as *mut RECT;
 
-                        FillRect(
-                            ruler_hdc,
-                            rect,
-                            if i % 2 == 0 {
-                                state.purple
-                            } else {
-                                state.lavender
-                            },
-                        );
+                        FillRect(ruler_hdc, rect, brushes[(i % 2).abs() as usize]);
+                    }
+                    for brush in brushes {
+                        DeleteObject(brush.into()).unwrap();
                     }
 
                     SetMapMode(ruler_hdc, MM_TEXT);
@@ -216,8 +204,6 @@ impl Ruler {
                 Box::new(RulerWindow {
                     config,
                     white: CreateSolidBrush(COLORREF(0x00FFFFFF)),
-                    purple: CreateSolidBrush(COLORREF(0x00C000C0)),
-                    lavender: CreateSolidBrush(COLORREF(0x00C080C0)),
                 })
             },
         )

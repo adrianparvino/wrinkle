@@ -1,32 +1,41 @@
+use std::str::FromStr;
 use std::sync::{Arc, Weak};
 
 use arc_swap::ArcSwap;
 use iced::alignment::Vertical;
-use iced::widget::{Column, button, row, text};
-use iced::{Element, Length, Size, Subscription};
+use iced::widget::{Column, Row, button, column, container, row, space, text, text_input};
+use iced::{Background, Element, Length, Size, Subscription};
 
-use crate::config::{Config, Hotkey};
+use crate::config::{self, Config, Hotkey};
 use crate::keylogger::KeyEvent;
 use crate::manager::Manager;
 
 #[derive(Debug)]
 struct Window {
     config: Arc<ArcSwap<Config>>,
+    colors: [String; 2],
     changing: Option<Hotkey>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum Message {
     Change(Hotkey),
+    SetColor(usize, String),
     KeyEvent(KeyEvent),
+    Save,
 }
 
 impl Window {
     fn new() -> Self {
         let config = Arc::new(ArcSwap::from_pointee(Config::load_from_file()));
+        let colors = config
+            .load_full()
+            .colors
+            .map(|color| iced::Color::from(color).to_string());
 
         Self {
             config,
+            colors,
             changing: None,
         }
     }
@@ -44,12 +53,25 @@ impl Window {
                         modifiers: Some(ev.modifiers),
                     }),
                 );
-                config.save_to_file().unwrap();
                 self.config.store(Arc::new(config));
                 self.changing = None;
             }
             Message::Change(hotkey) => {
                 self.changing = Some(hotkey);
+            }
+            Message::SetColor(i, color) => {
+                self.colors[i] = color;
+
+                if let Ok(color) = iced::Color::from_str(&self.colors[i]) {
+                    self.config.rcu(|config| {
+                        let mut config = **config;
+                        config.colors[i] = config::Color::from(color);
+                        config
+                    });
+                }
+            }
+            Message::Save => {
+                self.config.load_full().save_to_file().unwrap();
             }
         }
     }
@@ -59,8 +81,8 @@ impl Window {
 
         let hotkeys = Column::with_children(
             [
-                ("Tall", Hotkey::Tall),
                 ("Thin", Hotkey::Thin),
+                ("Tall", Hotkey::Tall),
                 ("Wide", Hotkey::Wide),
             ]
             .into_iter()
@@ -85,9 +107,39 @@ impl Window {
                 .align_y(Vertical::Center)
                 .into()
             }),
-        );
+        )
+        .spacing(6);
 
-        hotkeys.spacing(6).padding(16).into()
+        let colors = Row::with_children((0..self.colors.len()).map(|i| {
+            row![
+                text_input("Color", &self.colors[i])
+                    .width(Length::Fill)
+                    .on_input(move |color| Message::SetColor(i, color)),
+                container("")
+                    .height(Length::Fill)
+                    .width(40)
+                    .style(move |theme| container::Style {
+                        background: Some(Background::from(iced::Color::from(config.colors[i]))),
+                        ..container::rounded_box(theme)
+                    })
+            ]
+            .spacing(6)
+            .into()
+        }))
+        .height(24)
+        .spacing(12);
+
+        let save = row![
+            space().width(Length::Fill),
+            button(text!("Save").center())
+                .width(100)
+                .on_press(Message::Save)
+        ];
+
+        column![hotkeys, colors, space().height(Length::Fill), save]
+            .spacing(6)
+            .padding(16)
+            .into()
     }
 
     fn subscription(&self) -> Subscription<Message> {

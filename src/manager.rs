@@ -115,17 +115,13 @@ impl Manager {
             let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
             let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config {
-                tall_width,
-                tall_height,
-                ..
-            } = config;
+            let Config { tall, .. } = config;
 
             instance.set_window_pos(
-                center_x - tall_width / 2,
-                center_y - tall_height / 2,
-                tall_width,
-                tall_height,
+                center_x - tall.width / 2,
+                center_y - tall.height / 2,
+                tall.width,
+                tall.height,
             );
 
             self.state = Some(Hotkey::Tall);
@@ -135,17 +131,13 @@ impl Manager {
             let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
             let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config {
-                thin_width,
-                thin_height,
-                ..
-            } = config;
+            let Config { thin, .. } = config;
 
             instance.set_window_pos(
-                center_x - thin_width / 2,
-                center_y - thin_height / 2,
-                thin_width,
-                thin_height,
+                center_x - thin.width / 2,
+                center_y - thin.height / 2,
+                thin.width,
+                thin.height,
             );
 
             self.state = Some(Hotkey::Thin);
@@ -155,17 +147,13 @@ impl Manager {
             let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
             let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config {
-                wide_width,
-                wide_height,
-                ..
-            } = config;
+            let Config { wide, .. } = config;
 
             instance.set_window_pos(
-                center_x - wide_width / 2,
-                center_y - wide_height / 2,
-                wide_width,
-                wide_height,
+                center_x - wide.width / 2,
+                center_y - wide.height / 2,
+                wide.width,
+                wide.height,
             );
 
             self.state = Some(Hotkey::Wide);
@@ -187,15 +175,15 @@ impl Manager {
             }
 
             let config = **self.config.as_ref().load();
-            if let Some(tall) = config.tall
+            if let Some(tall) = config.tall_key
                 && tall.test(ev)
             {
                 self.update_state(Hotkey::Tall);
-            } else if let Some(thin) = config.thin
+            } else if let Some(thin) = config.thin_key
                 && thin.test(ev)
             {
                 self.update_state(Hotkey::Thin);
-            } else if let Some(wide) = config.wide
+            } else if let Some(wide) = config.wide_key
                 && wide.test(ev)
             {
                 self.update_state(Hotkey::Wide);
