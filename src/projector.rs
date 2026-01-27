@@ -16,12 +16,13 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::PCWSTR;
 
-use crate::config::Config;
+use crate::config::{Config, Hotkey};
 use crate::instance::MinecraftInstance;
 use crate::utils::UnsafeSync;
 use crate::wnd_class::{self, WndClass, wnd_proc};
 pub struct ProjectorWindow {
     instance: Arc<ArcSwapOption<MinecraftInstance>>,
+    hotkey: Arc<ArcSwap<Option<Hotkey>>>,
     ruler: Ruler,
     width: i32,
     height: i32,
@@ -30,6 +31,7 @@ pub struct ProjectorWindow {
 #[derive(Clone, Debug)]
 pub struct Projector {
     hwnd: HWND,
+    hotkey: Arc<ArcSwap<Option<Hotkey>>>,
 }
 
 unsafe impl Send for Projector {}
@@ -209,10 +211,6 @@ impl Ruler {
         )
         .unwrap();
 
-        unsafe {
-            let _ = ShowWindow(hwnd, SW_SHOW);
-        }
-
         Self { hwnd }
     }
 }
@@ -245,14 +243,20 @@ impl WndClass for ProjectorWindow {
                         return DefWindowProcW(hwnd, msg, wparam, lparam);
                     };
 
-                    let rect = instance.get_window_rect();
-                    let width = rect.right - rect.left;
+                    let hotkey = *self.hotkey.load_full();
 
+                    let rect = instance.get_window_rect();
                     let lpmi = instance.get_monitor_info();
-                    let projector_width = (lpmi.rcMonitor.right - lpmi.rcMonitor.left - width) / 2;
-                    let projector_height = 800;
+                    let projector_width = rect.left - lpmi.rcMonitor.left;
+                    let projector_height = if hotkey == Some(Hotkey::Tall) {
+                        800
+                    } else {
+                        1400
+                    };
                     let cy = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
+                    self.width = projector_width;
+                    self.height = projector_height;
                     SetWindowPos(
                         hwnd,
                         None,
@@ -260,7 +264,7 @@ impl WndClass for ProjectorWindow {
                         cy - projector_height / 2,
                         projector_width,
                         projector_height,
-                        SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+                        SWP_FRAMECHANGED,
                     )
                     .unwrap();
                     self.ruler.set_window_pos(
@@ -271,15 +275,14 @@ impl WndClass for ProjectorWindow {
                         projector_height,
                     );
 
-                    self.width = projector_width;
-                    self.height = projector_height;
-
                     LRESULT(1)
                 }
                 (WM_PAINT, _) => {
                     let Some(instance) = self.instance.load_full() else {
                         return DefWindowProcW(hwnd, msg, wparam, lparam);
                     };
+
+                    let hotkey = *self.hotkey.load_full();
 
                     let rect = instance.get_window_rect();
                     let width = rect.right - rect.left;
@@ -289,23 +292,74 @@ impl WndClass for ProjectorWindow {
                     let source_hdc = GetDC(Some(instance.hwnd));
                     let projector_hdc = BeginPaint(hwnd, &raw mut ps);
 
-                    let rect_width = 60;
-                    let rect_height = 500;
+                    match hotkey {
+                        Some(Hotkey::Tall) => {
+                            let _ = ShowWindow(self.ruler.hwnd, SW_SHOW);
+                        }
+                        _ => {
+                            let _ = ShowWindow(self.ruler.hwnd, SW_HIDE);
+                        }
+                    }
 
-                    StretchBlt(
-                        projector_hdc,
-                        0,
-                        0,
-                        self.width,
-                        self.height,
-                        Some(source_hdc),
-                        width / 2 - rect_width / 2,
-                        height / 2 - rect_height / 2,
-                        rect_width,
-                        rect_height,
-                        SRCCOPY,
-                    )
-                    .unwrap();
+                    match hotkey {
+                        Some(Hotkey::Tall) => {
+                            let rect_width = 60;
+                            let rect_height = 500;
+
+                            StretchBlt(
+                                projector_hdc,
+                                0,
+                                0,
+                                self.width,
+                                self.height,
+                                Some(source_hdc),
+                                width / 2 - rect_width / 2,
+                                height / 2 - rect_height / 2,
+                                rect_width,
+                                rect_height,
+                                SRCCOPY,
+                            )
+                            .unwrap();
+                        }
+                        Some(Hotkey::Thin) => {
+                            let e_height = self.width / 11;
+
+                            let pie_height = self.height - e_height;
+                            let pie_width = self.width;
+
+                            StretchBlt(
+                                projector_hdc,
+                                0,
+                                0,
+                                self.width,
+                                e_height,
+                                Some(source_hdc),
+                                0,
+                                37,
+                                99,
+                                9,
+                                SRCCOPY,
+                            )
+                            .unwrap();
+
+                            StretchBlt(
+                                projector_hdc,
+                                0,
+                                e_height,
+                                pie_width,
+                                pie_height,
+                                Some(source_hdc),
+                                width - 340,
+                                height - 420,
+                                340,
+                                420,
+                                SRCCOPY,
+                            )
+                            .unwrap();
+                        }
+                        _ => {}
+                    }
+
                     ReleaseDC(Some(instance.hwnd), source_hdc);
                     EndPaint(hwnd, &raw const ps).unwrap();
 
@@ -321,9 +375,10 @@ impl WndClass for ProjectorWindow {
 }
 
 impl Projector {
-    pub fn set_visibility(&self, visibility: bool) {
+    pub fn hotkey_hook(&self, hotkey: Option<Hotkey>) {
         unsafe {
-            let _ = ShowWindow(self.hwnd, if visibility { SW_SHOW } else { SW_HIDE });
+            self.hotkey.store(Arc::new(hotkey));
+            let _ = ShowWindow(self.hwnd, if hotkey.is_some() { SW_SHOW } else { SW_HIDE });
         }
     }
 
@@ -332,6 +387,8 @@ impl Projector {
         config: Arc<ArcSwap<Config>>,
     ) -> Self {
         let ruler = Ruler::spawn(config.clone());
+
+        let hotkey = Arc::new(ArcSwap::from_pointee(None));
 
         let projector_wnd = wnd_class::spawn(
             WS_EX_TOPMOST,
@@ -344,6 +401,7 @@ impl Projector {
                 width: 0,
                 height: 0,
                 ruler,
+                hotkey: hotkey.clone(),
             }),
         )
         .unwrap();
@@ -352,6 +410,7 @@ impl Projector {
 
         Self {
             hwnd: projector_wnd,
+            hotkey,
         }
     }
 }

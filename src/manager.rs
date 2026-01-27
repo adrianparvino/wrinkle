@@ -205,8 +205,7 @@ impl Manager {
             self.state = Some(Hotkey::Wide);
         }
 
-        self.projector
-            .set_visibility(self.state == Some(Hotkey::Tall));
+        self.projector.hotkey_hook(self.state);
         self.slow_mouse(self.state == Some(Hotkey::Tall));
     }
 
