@@ -13,6 +13,7 @@ use crate::manager::Manager;
 
 #[derive(Debug)]
 struct Window {
+    old_config: Config,
     config: Arc<ArcSwap<Config>>,
     colors: [String; 2],
     thin: String,
@@ -32,17 +33,18 @@ enum Message {
 
 impl Window {
     fn new() -> Self {
-        let config = Config::load_from_file();
-        let colors = config
+        let old_config = Config::load_from_file();
+        let colors = old_config
             .colors
             .map(|color| iced::Color::from(color).to_string());
-        let thin = config.thin.to_string();
-        let tall = config.tall.to_string();
-        let wide = config.wide.to_string();
+        let thin = old_config.thin.to_string();
+        let tall = old_config.tall.to_string();
+        let wide = old_config.wide.to_string();
 
-        let config = Arc::new(ArcSwap::from_pointee(config));
+        let config = Arc::new(ArcSwap::from_pointee(old_config));
 
         Self {
+            old_config,
             config,
             colors,
             thin,
@@ -106,7 +108,9 @@ impl Window {
                 }
             }
             Message::Save => {
-                self.config.load_full().save_to_file().unwrap();
+                let config = self.config.load_full();
+                config.save_to_file().unwrap();
+                self.old_config = *config;
             }
         }
     }
@@ -172,7 +176,7 @@ impl Window {
             space().width(Length::Fill),
             button(text!("Save").center())
                 .width(100)
-                .on_press(Message::Save)
+                .on_press_maybe((config != self.old_config).then_some(Message::Save))
         ];
 
         column![hotkeys, colors, space().height(Length::Fill), save]
