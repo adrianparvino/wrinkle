@@ -1,3 +1,6 @@
+pub mod color;
+pub mod resolution;
+
 use std::{
     fs::{File, create_dir_all},
     sync::LazyLock,
@@ -10,7 +13,6 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 use std::io::Write;
-use windows::Win32::Foundation::COLORREF;
 
 use crate::keylogger::{KeyFilter, Modifiers};
 
@@ -25,64 +27,23 @@ pub enum Hotkey {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Resolution {
-    pub height: i32,
-    pub width: i32,
-}
-
-impl Resolution {
-    fn new(width: impl Into<i32>, height: impl Into<i32>) -> Self {
-        Self {
-            width: width.into(),
-            height: height.into(),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Color(pub u8, pub u8, pub u8);
-
-impl From<Color> for COLORREF {
-    fn from(color: Color) -> Self {
-        let r = color.0 as u32;
-        let g = color.1 as u32;
-        let b = color.2 as u32;
-
-        COLORREF(b << 16 | g << 8 | r)
-    }
-}
-impl From<Color> for iced::Color {
-    fn from(color: Color) -> Self {
-        iced::Color::from_rgb8(color.0, color.1, color.2)
-    }
-}
-
-impl From<iced::Color> for Color {
-    fn from(color: iced::Color) -> Self {
-        let [r, g, b, _] = color.into_rgba8();
-
-        Color(r, g, b)
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-    pub thin: Resolution,
-    pub tall: Resolution,
-    pub wide: Resolution,
+    pub thin: resolution::Resolution,
+    pub tall: resolution::Resolution,
+    pub wide: resolution::Resolution,
     pub ruler: i32,
     pub thin_key: Option<KeyFilter>,
     pub tall_key: Option<KeyFilter>,
     pub wide_key: Option<KeyFilter>,
-    pub colors: [Color; 2],
+    pub colors: [color::Color; 2],
 }
 
 impl Default for Config {
     fn default() -> Config {
         Self {
-            tall: Resolution::new(384, 16384),
-            thin: Resolution::new(400, 1800),
-            wide: Resolution::new(1920, 300),
+            tall: resolution::Resolution::new(384, 16384),
+            thin: resolution::Resolution::new(400, 1800),
+            wide: resolution::Resolution::new(1920, 300),
             ruler: 19,
             thin_key: Some(KeyFilter {
                 char: 'h',
@@ -102,7 +63,7 @@ impl Default for Config {
                     ..Modifiers::default()
                 }),
             }),
-            colors: [Color(91, 207, 250), Color(245, 171, 185)],
+            colors: [color::Color(91, 207, 250), color::Color(245, 171, 185)],
         }
     }
 }

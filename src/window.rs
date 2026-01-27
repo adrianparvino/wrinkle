@@ -65,7 +65,7 @@ impl Window {
                 if let Ok(color) = iced::Color::from_str(&self.colors[i]) {
                     self.config.rcu(|config| {
                         let mut config = **config;
-                        config.colors[i] = config::Color::from(color);
+                        config.colors[i] = config::color::Color::from(color);
                         config
                     });
                 }
