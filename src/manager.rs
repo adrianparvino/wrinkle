@@ -5,7 +5,9 @@ use futures::{SinkExt, StreamExt};
 use futures_channel::{mpsc, oneshot};
 use windows::{
     Win32::UI::WindowsAndMessaging::{
-        DispatchMessageW, GetMessageW, MSG, SetProcessDPIAware, TranslateMessage,
+        DispatchMessageW, GetMessageW, MSG, SPI_GETMOUSESPEED, SPI_SETMOUSESPEED,
+        SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetProcessDPIAware, SystemParametersInfoW,
+        TranslateMessage,
     },
     core::BOOL,
 };
@@ -26,9 +28,38 @@ pub struct Manager {
     pub key_channel: mpsc::Receiver<KeyEvent>,
     pub config: Arc<ArcSwap<Config>>,
     pub state: Option<Hotkey>,
+    mouse_speed: i32,
+}
+
+impl Drop for Manager {
+    fn drop(&mut self) {
+        self.slow_mouse(false);
+    }
 }
 
 impl Manager {
+    fn slow_mouse(&self, slow: bool) {
+        unsafe {
+            if slow {
+                SystemParametersInfoW(
+                    SPI_SETMOUSESPEED,
+                    0,
+                    Some(1 as *mut _),
+                    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS::default(),
+                )
+                .unwrap();
+            } else {
+                SystemParametersInfoW(
+                    SPI_SETMOUSESPEED,
+                    0,
+                    Some(self.mouse_speed as usize as *mut _),
+                    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS::default(),
+                )
+                .unwrap();
+            }
+        }
+    }
+
     pub async fn spawn(config: Arc<ArcSwap<Config>>) -> Self {
         unsafe {
             SetProcessDPIAware().unwrap();
@@ -83,12 +114,27 @@ impl Manager {
 
         let projector = projector.await.unwrap();
 
+        let mouse_speed = unsafe {
+            let mut mouse_speed = 0i32;
+
+            SystemParametersInfoW(
+                SPI_GETMOUSESPEED,
+                0,
+                Some(&raw mut mouse_speed as *mut _),
+                SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS::default(),
+            )
+            .unwrap();
+
+            mouse_speed
+        };
+
         Manager {
             key_channel: rx,
             projector,
             instance,
             state: None,
             config,
+            mouse_speed,
         }
     }
 
@@ -161,6 +207,7 @@ impl Manager {
 
         self.projector
             .set_visibility(self.state == Some(Hotkey::Tall));
+        self.slow_mouse(self.state == Some(Hotkey::Tall));
     }
 
     pub async fn run(&mut self, mut tx: mpsc::Sender<KeyEvent>) {
