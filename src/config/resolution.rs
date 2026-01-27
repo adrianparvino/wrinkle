@@ -1,3 +1,10 @@
+use std::{
+    fmt::Display,
+    num::{ParseIntError, TryFromIntError},
+    str::FromStr,
+};
+use thiserror::Error;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -12,5 +19,46 @@ impl Resolution {
             width: width.into(),
             height: height.into(),
         }
+    }
+}
+
+impl Display for Resolution {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}x{}", self.width, self.height)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ParseResolutionError {
+    #[error("parse int error")]
+    ParseIntError(#[from] ParseIntError),
+
+    #[error("try from int error")]
+    TryFromIntError(#[from] TryFromIntError),
+
+    #[error("invalid format")]
+    InvalidFormat,
+}
+
+impl FromStr for Resolution {
+    type Err = ParseResolutionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut it = s.split('x');
+
+        let Some(width) = it.next() else {
+            return Err(ParseResolutionError::InvalidFormat);
+        };
+        let Some(height) = it.next() else {
+            return Err(ParseResolutionError::InvalidFormat);
+        };
+        let None = it.next() else {
+            return Err(ParseResolutionError::InvalidFormat);
+        };
+
+        let width: i32 = u32::from_str_radix(width, 10)?.try_into()?;
+        let height: i32 = u32::from_str_radix(height, 10)?.try_into()?;
+
+        Ok(Resolution::new(width, height))
     }
 }

@@ -2591,6 +2591,7 @@ dependencies = [
  "futures-channel",
  "iced",
  "serde",
+ "thiserror 2.0.18",
  "toml",
  "widestring",
  "windows",

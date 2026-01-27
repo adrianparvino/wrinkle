@@ -6,6 +6,7 @@ use iced::alignment::Vertical;
 use iced::widget::{Column, Row, button, column, container, row, space, text, text_input};
 use iced::{Background, Element, Length, Size, Subscription};
 
+use crate::config::resolution::Resolution;
 use crate::config::{self, Config, Hotkey};
 use crate::keylogger::KeyEvent;
 use crate::manager::Manager;
@@ -14,6 +15,9 @@ use crate::manager::Manager;
 struct Window {
     config: Arc<ArcSwap<Config>>,
     colors: [String; 2],
+    thin: String,
+    tall: String,
+    wide: String,
     changing: Option<Hotkey>,
 }
 
@@ -21,21 +25,29 @@ struct Window {
 enum Message {
     Change(Hotkey),
     SetColor(usize, String),
+    SetResolution(Hotkey, String),
     KeyEvent(KeyEvent),
     Save,
 }
 
 impl Window {
     fn new() -> Self {
-        let config = Arc::new(ArcSwap::from_pointee(Config::load_from_file()));
+        let config = Config::load_from_file();
         let colors = config
-            .load_full()
             .colors
             .map(|color| iced::Color::from(color).to_string());
+        let thin = config.thin.to_string();
+        let tall = config.tall.to_string();
+        let wide = config.wide.to_string();
+
+        let config = Arc::new(ArcSwap::from_pointee(config));
 
         Self {
             config,
             colors,
+            thin,
+            tall,
+            wide,
             changing: None,
         }
     }
@@ -59,6 +71,29 @@ impl Window {
             Message::Change(hotkey) => {
                 self.changing = Some(hotkey);
             }
+            Message::SetResolution(hotkey, resolution) => {
+                match Resolution::from_str(&resolution) {
+                    Ok(resolution) => {
+                        self.config
+                            .rcu(move |config| config.set_resolution(hotkey, resolution));
+                    }
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                }
+
+                match hotkey {
+                    Hotkey::Tall => {
+                        self.tall = resolution;
+                    }
+                    Hotkey::Thin => {
+                        self.thin = resolution;
+                    }
+                    Hotkey::Wide => {
+                        self.wide = resolution;
+                    }
+                }
+            }
             Message::SetColor(i, color) => {
                 self.colors[i] = color;
 
@@ -81,14 +116,17 @@ impl Window {
 
         let hotkeys = Column::with_children(
             [
-                ("Thin", Hotkey::Thin),
-                ("Tall", Hotkey::Tall),
-                ("Wide", Hotkey::Wide),
+                ("Tall", &self.tall, Hotkey::Tall),
+                ("Thin", &self.thin, Hotkey::Thin),
+                ("Wide", &self.wide, Hotkey::Wide),
             ]
             .into_iter()
-            .map(|(name, hotkey)| {
+            .map(|(name, resolution, hotkey)| {
                 row![
                     text(name).width(Length::Fill),
+                    text_input("Resolution", resolution)
+                        .width(100)
+                        .on_input(move |resolution| Message::SetResolution(hotkey, resolution)),
                     button(
                         (if Some(hotkey) == self.changing {
                             text!("...")
@@ -104,6 +142,7 @@ impl Window {
                     .on_press(Message::Change(hotkey))
                 ]
                 .width(Length::Fill)
+                .spacing(6)
                 .align_y(Vertical::Center)
                 .into()
             }),

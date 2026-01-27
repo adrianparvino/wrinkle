@@ -10,6 +10,7 @@ figment = { version = "0.10.19", features = ["toml"] }
 futures = "0.3.31"
 futures-channel = "0.3.31"
 serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.18"
 toml = "0.8.23"
 widestring = "1.2.1"
 windows = { version = "0.62.2", features = ["Win32_Graphics_Gdi", "Win32_Graphics_GdiPlus", "Win32_System_LibraryLoader", "Win32_UI_Input", "Win32_UI_WindowsAndMessaging"] }

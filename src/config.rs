@@ -14,7 +14,10 @@ use figment::{
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-use crate::keylogger::{KeyFilter, Modifiers};
+use crate::{
+    config::resolution::Resolution,
+    keylogger::{KeyFilter, Modifiers},
+};
 
 static PROJECT_DIR: LazyLock<ProjectDirs> =
     LazyLock::new(|| ProjectDirs::from("", "", "wrinkle").unwrap());
@@ -105,6 +108,21 @@ impl Config {
             }
             Hotkey::Wide => {
                 self.wide_key = key_filter;
+            }
+        }
+        self
+    }
+
+    pub fn set_resolution(mut self, hotkey: Hotkey, resolution: Resolution) -> Self {
+        match hotkey {
+            Hotkey::Thin => {
+                self.thin = resolution;
+            }
+            Hotkey::Tall => {
+                self.tall = resolution;
+            }
+            Hotkey::Wide => {
+                self.wide = resolution;
             }
         }
         self
