@@ -8,5 +8,7 @@ mod window;
 mod wnd_class;
 
 fn main() {
+    env_logger::init();
+
     window::spawn();
 }
