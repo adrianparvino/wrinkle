@@ -122,7 +122,7 @@ impl WndClass for MinecraftInstanceListenerWindow {
     fn on_message(&mut self, hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         unsafe {
             let shell_hook_msg =
-                RegisterWindowMessageW(PCWSTR(widestring::u16str!("SHELLHOOK").as_ptr()));
+                RegisterWindowMessageW(PCWSTR(widestring::u16cstr!("SHELLHOOK").as_ptr()));
 
             log::trace!(
                 "Received message: {:?} {:?}",

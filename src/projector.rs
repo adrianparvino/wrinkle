@@ -393,7 +393,7 @@ impl Projector {
         let projector_wnd = wnd_class::spawn(
             WS_EX_TOPMOST,
             WS_POPUP,
-            PCWSTR(widestring::u16str!("Projector").as_ptr()),
+            PCWSTR(widestring::u16cstr!("Projector").as_ptr()),
             None,
             None,
             Box::new(ProjectorWindow {
