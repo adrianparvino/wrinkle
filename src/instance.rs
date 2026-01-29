@@ -52,15 +52,6 @@ impl MinecraftInstance {
 
     pub fn set_window_pos(&self, left: i32, top: i32, width: i32, height: i32) {
         unsafe {
-            let mut style = GetWindowLongW(self.hwnd, GWL_STYLE);
-            style &= !(WS_BORDER
-                | WS_DLGFRAME
-                | WS_THICKFRAME
-                | WS_MINIMIZEBOX
-                | WS_MAXIMIZEBOX
-                | WS_SYSMENU)
-                .0 as i32;
-            SetWindowLongW(self.hwnd, GWL_STYLE, style);
             SetWindowPos(
                 self.hwnd,
                 None,
@@ -85,6 +76,25 @@ impl MinecraftInstance {
 
 struct MinecraftInstanceListenerWindow {
     cb: Box<dyn FnMut(HWND)>,
+}
+
+impl MinecraftInstanceListenerWindow {
+    fn run_cb(&mut self, hwnd: HWND) {
+        log::debug!("Found new minecraft instance: {:?}", hwnd);
+        unsafe {
+            let mut style = GetWindowLongW(hwnd, GWL_STYLE);
+            style &= !(WS_BORDER
+                | WS_DLGFRAME
+                | WS_THICKFRAME
+                | WS_MINIMIZEBOX
+                | WS_MAXIMIZEBOX
+                | WS_SYSMENU)
+                .0 as i32;
+            SetWindowLongW(hwnd, GWL_STYLE, style);
+        }
+
+        (self.cb)(hwnd)
+    }
 }
 
 fn is_minecraft_window(hwnd: HWND) -> bool {
@@ -135,8 +145,7 @@ impl WndClass for MinecraftInstanceListenerWindow {
                 let hwnd: HWND = HWND(lparam.0 as *mut _);
 
                 if is_minecraft_window(hwnd) {
-                    log::debug!("Found new minecraft instance: {:?}", hwnd);
-                    (self.cb)(hwnd);
+                    self.run_cb(hwnd);
                 }
             }
 
@@ -181,7 +190,7 @@ impl MinecraftInstanceListener {
             let state = &mut *(lparam.0 as *mut MinecraftInstanceListenerWindow);
 
             if is_minecraft_window(hwnd) {
-                (state.cb)(hwnd);
+                state.run_cb(hwnd);
             }
 
             BOOL::from(true)
