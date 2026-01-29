@@ -76,6 +76,8 @@ impl Manager {
                 MinecraftInstanceListener::spawn({
                     let instance = instance.clone();
                     Box::new(move |hwnd| {
+                        log::debug!("Received new minecraft instance: {:?}", hwnd);
+
                         let found_instance = MinecraftInstance::new(hwnd);
 
                         let lpmi = found_instance.get_monitor_info();

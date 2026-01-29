@@ -124,10 +124,18 @@ impl WndClass for MinecraftInstanceListenerWindow {
             let shell_hook_msg =
                 RegisterWindowMessageW(PCWSTR(widestring::u16str!("SHELLHOOK").as_ptr()));
 
+            log::trace!(
+                "Received message: {:?} {:?}",
+                (msg, wparam),
+                (shell_hook_msg, WPARAM(HSHELL_WINDOWCREATED as usize))
+            );
+
             if msg == shell_hook_msg && wparam == WPARAM(HSHELL_WINDOWCREATED as usize) {
+                log::trace!("New window created: {:?}", hwnd);
                 let hwnd: HWND = HWND(lparam.0 as *mut _);
 
                 if is_minecraft_window(hwnd) {
+                    log::debug!("Found new minecraft instance: {:?}", hwnd);
                     (self.cb)(hwnd);
                 }
             }
