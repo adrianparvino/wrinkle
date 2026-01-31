@@ -378,7 +378,14 @@ impl Projector {
     pub fn hotkey_hook(&self, hotkey: Option<Hotkey>) {
         unsafe {
             self.hotkey.store(Arc::new(hotkey));
-            let _ = ShowWindow(self.hwnd, if hotkey.is_some() { SW_SHOW } else { SW_HIDE });
+            let _ = ShowWindow(
+                self.hwnd,
+                if matches!(hotkey, Some(Hotkey::Tall | Hotkey::Thin)) {
+                    SW_SHOW
+                } else {
+                    SW_HIDE
+                },
+            );
         }
     }
 
