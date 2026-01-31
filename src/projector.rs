@@ -11,7 +11,7 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
     DefWindowProcW, GWL_HWNDPARENT, GetWindowRect, RegisterClassExW, SW_HIDE, SW_SHOW,
-    SWP_FRAMECHANGED, SWP_SHOWWINDOW, SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_PAINT,
+    SWP_FRAMECHANGED, SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_PAINT,
     WM_SHOWWINDOW, WNDCLASSEXW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::PCWSTR;
