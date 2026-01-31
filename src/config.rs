@@ -1,5 +1,5 @@
 pub mod color;
-pub mod resolution;
+pub mod xy;
 
 use std::{
     fs::{File, create_dir_all},
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 use crate::{
-    config::resolution::Resolution,
+    config::xy::XY,
     keylogger::{KeyFilter, Modifiers},
 };
 
@@ -31,9 +31,9 @@ pub enum Hotkey {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-    pub thin: resolution::Resolution,
-    pub tall: resolution::Resolution,
-    pub wide: resolution::Resolution,
+    pub thin: xy::XY,
+    pub tall: xy::XY,
+    pub wide: xy::XY,
     pub ruler: i32,
     pub thin_key: Option<KeyFilter>,
     pub tall_key: Option<KeyFilter>,
@@ -44,9 +44,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Self {
-            tall: resolution::Resolution::new(384, 16384),
-            thin: resolution::Resolution::new(400, 1800),
-            wide: resolution::Resolution::new(1920, 300),
+            tall: xy::XY::new(384, 16384),
+            thin: xy::XY::new(400, 1800),
+            wide: xy::XY::new(1920, 300),
             ruler: 19,
             thin_key: Some(KeyFilter {
                 char: 'h',
@@ -113,7 +113,7 @@ impl Config {
         self
     }
 
-    pub fn set_resolution(mut self, hotkey: Hotkey, resolution: Resolution) -> Self {
+    pub fn set_resolution(mut self, hotkey: Hotkey, resolution: XY) -> Self {
         match hotkey {
             Hotkey::Thin => {
                 self.thin = resolution;

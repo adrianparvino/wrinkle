@@ -8,23 +8,23 @@ use thiserror::Error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Resolution {
-    pub height: i32,
-    pub width: i32,
+pub struct XY {
+    pub x: i32,
+    pub y: i32,
 }
 
-impl Resolution {
+impl XY {
     pub fn new(width: impl Into<i32>, height: impl Into<i32>) -> Self {
         Self {
-            width: width.into(),
-            height: height.into(),
+            x: width.into(),
+            y: height.into(),
         }
     }
 }
 
-impl Display for Resolution {
+impl Display for XY {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}x{}", self.width, self.height)
+        write!(f, "{}x{}", self.x, self.y)
     }
 }
 
@@ -40,7 +40,7 @@ pub enum ParseResolutionError {
     InvalidFormat,
 }
 
-impl FromStr for Resolution {
+impl FromStr for XY {
     type Err = ParseResolutionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -59,6 +59,6 @@ impl FromStr for Resolution {
         let width: i32 = u32::from_str_radix(width, 10)?.try_into()?;
         let height: i32 = u32::from_str_radix(height, 10)?.try_into()?;
 
-        Ok(Resolution::new(width, height))
+        Ok(XY::new(width, height))
     }
 }

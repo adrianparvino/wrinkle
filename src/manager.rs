@@ -165,12 +165,7 @@ impl Manager {
 
             let Config { tall, .. } = config;
 
-            instance.set_window_pos(
-                center_x - tall.width / 2,
-                center_y - tall.height / 2,
-                tall.width,
-                tall.height,
-            );
+            instance.set_window_pos(center_x - tall.y / 2, center_y - tall.x / 2, tall.y, tall.x);
 
             self.state = Some(Hotkey::Tall);
         } else if hotkey == Hotkey::Thin {
@@ -181,12 +176,7 @@ impl Manager {
 
             let Config { thin, .. } = config;
 
-            instance.set_window_pos(
-                center_x - thin.width / 2,
-                center_y - thin.height / 2,
-                thin.width,
-                thin.height,
-            );
+            instance.set_window_pos(center_x - thin.y / 2, center_y - thin.x / 2, thin.y, thin.x);
 
             self.state = Some(Hotkey::Thin);
         } else if hotkey == Hotkey::Wide {
@@ -197,12 +187,7 @@ impl Manager {
 
             let Config { wide, .. } = config;
 
-            instance.set_window_pos(
-                center_x - wide.width / 2,
-                center_y - wide.height / 2,
-                wide.width,
-                wide.height,
-            );
+            instance.set_window_pos(center_x - wide.y / 2, center_y - wide.x / 2, wide.y, wide.x);
 
             self.state = Some(Hotkey::Wide);
         }

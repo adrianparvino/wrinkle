@@ -6,7 +6,7 @@ use iced::alignment::Vertical;
 use iced::widget::{Column, Row, button, column, container, row, space, text, text_input};
 use iced::{Background, Element, Length, Size, Subscription};
 
-use crate::config::resolution::Resolution;
+use crate::config::xy::XY;
 use crate::config::{self, Config, Hotkey};
 use crate::keylogger::KeyEvent;
 use crate::manager::Manager;
@@ -74,7 +74,7 @@ impl Window {
                 self.changing = Some(hotkey);
             }
             Message::SetResolution(hotkey, resolution) => {
-                match Resolution::from_str(&resolution) {
+                match XY::from_str(&resolution) {
                     Ok(resolution) => {
                         self.config
                             .rcu(move |config| config.set_resolution(hotkey, resolution));
