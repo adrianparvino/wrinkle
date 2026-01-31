@@ -154,6 +154,8 @@ impl Manager {
 
         let rect = match hotkey {
             _ if self.state == Some(hotkey) => {
+                log::debug!("Setting normal");
+
                 self.state = None;
 
                 (
@@ -165,33 +167,39 @@ impl Manager {
                 )
             }
             Hotkey::Tall => {
+                log::debug!("Setting tall");
+
                 let Config { tall, .. } = config;
 
                 self.state = Some(Hotkey::Tall);
 
                 (
-                    XY::new(center_x - tall.y / 2, center_y - tall.x / 2),
-                    XY::new(tall.y, tall.x),
+                    XY::new(center_x - tall.x / 2, center_y - tall.y / 2),
+                    XY::new(tall.x, tall.y),
                 )
             }
             Hotkey::Thin => {
+                log::debug!("Setting thin");
+
                 let Config { thin, .. } = config;
 
                 self.state = Some(Hotkey::Thin);
 
                 (
-                    XY::new(center_x - thin.y / 2, center_y - thin.x / 2),
-                    XY::new(thin.y, thin.x),
+                    XY::new(center_x - thin.x / 2, center_y - thin.y / 2),
+                    XY::new(thin.x, thin.y),
                 )
             }
             Hotkey::Wide => {
+                log::debug!("Setting wide");
+
                 let Config { wide, .. } = config;
 
                 self.state = Some(Hotkey::Wide);
 
                 (
-                    XY::new(center_x - wide.y / 2, center_y - wide.x / 2),
-                    XY::new(wide.y, wide.x),
+                    XY::new(center_x - wide.x / 2, center_y - wide.y / 2),
+                    XY::new(wide.x, wide.y),
                 )
             }
         };
