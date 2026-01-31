@@ -147,10 +147,13 @@ impl Manager {
             return;
         };
 
+        let lpmi = instance.get_monitor_info();
+
+        let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
+        let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+
         let rect = match hotkey {
             _ if self.state == Some(hotkey) => {
-                let lpmi = instance.get_monitor_info();
-
                 self.state = None;
 
                 (
@@ -162,11 +165,6 @@ impl Manager {
                 )
             }
             Hotkey::Tall => {
-                let lpmi = instance.get_monitor_info();
-
-                let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-                let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
-
                 let Config { tall, .. } = config;
 
                 self.state = Some(Hotkey::Tall);
@@ -177,11 +175,6 @@ impl Manager {
                 )
             }
             Hotkey::Thin => {
-                let lpmi = instance.get_monitor_info();
-
-                let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-                let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
-
                 let Config { thin, .. } = config;
 
                 self.state = Some(Hotkey::Thin);
@@ -192,11 +185,6 @@ impl Manager {
                 )
             }
             Hotkey::Wide => {
-                let lpmi = instance.get_monitor_info();
-
-                let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-                let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
-
                 let Config { wide, .. } = config;
 
                 self.state = Some(Hotkey::Wide);
