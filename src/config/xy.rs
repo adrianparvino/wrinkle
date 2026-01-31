@@ -28,6 +28,39 @@ impl Display for XY {
     }
 }
 
+impl std::ops::Div<i32> for XY {
+    type Output = Self;
+
+    fn div(self, rhs: i32) -> Self::Output {
+        Self {
+            x: self.x / rhs,
+            y: self.y / rhs,
+        }
+    }
+}
+
+impl std::ops::Add<Self> for XY {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl std::ops::Sub<Self> for XY {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ParseResolutionError {
     #[error("parse int error")]

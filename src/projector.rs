@@ -11,11 +11,12 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
     DefWindowProcW, GWL_HWNDPARENT, GetWindowRect, RegisterClassExW, SW_HIDE, SW_SHOW,
-    SWP_FRAMECHANGED, SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_PAINT,
-    WM_SHOWWINDOW, WNDCLASSEXW, WS_EX_TOPMOST, WS_POPUP,
+    SWP_FRAMECHANGED, SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_PAINT, WM_SHOWWINDOW,
+    WNDCLASSEXW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::PCWSTR;
 
+use crate::config::xy::XY;
 use crate::config::{Config, Hotkey};
 use crate::instance::MinecraftInstance;
 use crate::utils::UnsafeSync;
@@ -246,33 +247,35 @@ impl WndClass for ProjectorWindow {
                     let hotkey = *self.hotkey.load_full();
 
                     let rect = instance.get_window_rect();
-                    let lpmi = instance.get_monitor_info();
-                    let projector_width = rect.left - lpmi.rcMonitor.left;
-                    let projector_height = if hotkey == Some(Hotkey::Tall) {
-                        800
-                    } else {
-                        1400
-                    };
-                    let cy = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+                    let window_width = rect.right - rect.left;
+                    let (position, size) = instance.get_monitor_info();
+                    let projector_size = XY::new(
+                        (size.x - window_width) / 2,
+                        if hotkey == Some(Hotkey::Tall) {
+                            800
+                        } else {
+                            1400
+                        },
+                    );
 
-                    self.width = projector_width;
-                    self.height = projector_height;
+                    self.width = projector_size.x;
+                    self.height = projector_size.y;
                     SetWindowPos(
                         hwnd,
                         None,
-                        0,
-                        cy - projector_height / 2,
-                        projector_width,
-                        projector_height,
+                        position.x,
+                        (position.y + size.y - projector_size.y) / 2,
+                        projector_size.x,
+                        projector_size.y,
                         SWP_FRAMECHANGED,
                     )
                     .unwrap();
                     self.ruler.set_window_pos(
                         hwnd,
-                        0,
-                        cy - projector_height / 2,
-                        projector_width,
-                        projector_height,
+                        position.x,
+                        (position.y + size.y - projector_size.y) / 2,
+                        projector_size.x,
+                        projector_size.y,
                     );
 
                     LRESULT(1)

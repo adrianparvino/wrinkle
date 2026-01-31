@@ -80,14 +80,8 @@ impl Manager {
 
                         let found_instance = MinecraftInstance::new(hwnd);
 
-                        let lpmi = found_instance.get_monitor_info();
-                        found_instance.set_window_pos((
-                            XY::new(lpmi.rcMonitor.left, lpmi.rcMonitor.top),
-                            XY::new(
-                                lpmi.rcMonitor.right - lpmi.rcMonitor.left,
-                                lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
-                            ),
-                        ));
+                        let rect = found_instance.get_monitor_info();
+                        found_instance.set_window_pos(rect);
 
                         instance.store(Some(Arc::new(found_instance)));
                     })
@@ -147,10 +141,7 @@ impl Manager {
             return;
         };
 
-        let lpmi = instance.get_monitor_info();
-
-        let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-        let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+        let (position, size) = instance.get_monitor_info();
 
         let rect = match hotkey {
             _ if self.state == Some(hotkey) => {
@@ -158,13 +149,7 @@ impl Manager {
 
                 self.state = None;
 
-                (
-                    XY::new(lpmi.rcMonitor.left, lpmi.rcMonitor.top),
-                    XY::new(
-                        lpmi.rcMonitor.right - lpmi.rcMonitor.left,
-                        lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
-                    ),
-                )
+                (position, size)
             }
             Hotkey::Tall => {
                 log::debug!("Setting tall");
@@ -173,10 +158,7 @@ impl Manager {
 
                 self.state = Some(Hotkey::Tall);
 
-                (
-                    XY::new(center_x - tall.x / 2, center_y - tall.y / 2),
-                    XY::new(tall.x, tall.y),
-                )
+                ((position + size - tall) / 2, tall)
             }
             Hotkey::Thin => {
                 log::debug!("Setting thin");
@@ -185,10 +167,7 @@ impl Manager {
 
                 self.state = Some(Hotkey::Thin);
 
-                (
-                    XY::new(center_x - thin.x / 2, center_y - thin.y / 2),
-                    XY::new(thin.x, thin.y),
-                )
+                ((position + size - thin) / 2, thin)
             }
             Hotkey::Wide => {
                 log::debug!("Setting wide");
@@ -197,10 +176,7 @@ impl Manager {
 
                 self.state = Some(Hotkey::Wide);
 
-                (
-                    XY::new(center_x - wide.x / 2, center_y - wide.y / 2),
-                    XY::new(wide.x, wide.y),
-                )
+                ((position + size - wide) / 2, wide)
             }
         };
 

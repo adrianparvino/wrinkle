@@ -41,13 +41,24 @@ impl MinecraftInstance {
         unsafe { self.hwnd == GetForegroundWindow() }
     }
 
-    pub fn get_monitor_info(&self) -> MONITORINFO {
+    pub fn get_monitor_info(&self) -> (XY, XY) {
         unsafe {
             let monitor = MonitorFromWindow(self.hwnd, MONITOR_DEFAULTTOPRIMARY);
             let mut lpmi = MONITORINFO::default();
             lpmi.cbSize = std::mem::size_of_val(&lpmi) as u32;
             GetMonitorInfoW(monitor, &raw mut lpmi).unwrap();
-            lpmi
+
+            let RECT {
+                left,
+                top,
+                right,
+                bottom,
+            } = lpmi.rcMonitor;
+
+            let position = XY::new(left, top);
+            let size = XY::new(right - left, bottom - top);
+
+            (position, size)
         }
     }
 
