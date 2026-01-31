@@ -60,6 +60,14 @@ impl MinecraftInstance {
             },
         ) = rect;
 
+        log::debug!(
+            "Resizing minecraft instance to: {}x{}+{}x{}",
+            left,
+            top,
+            width,
+            height
+        );
+
         unsafe {
             SetWindowPos(
                 self.hwnd,
