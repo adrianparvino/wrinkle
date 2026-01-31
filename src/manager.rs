@@ -13,7 +13,7 @@ use windows::{
 };
 
 use crate::{
-    config::{Config, Hotkey},
+    config::{Config, Hotkey, xy::XY},
     instance::MinecraftInstance,
     projector::Projector,
 };
@@ -81,12 +81,13 @@ impl Manager {
                         let found_instance = MinecraftInstance::new(hwnd);
 
                         let lpmi = found_instance.get_monitor_info();
-                        found_instance.set_window_pos(
-                            lpmi.rcMonitor.left,
-                            lpmi.rcMonitor.top,
-                            lpmi.rcMonitor.right - lpmi.rcMonitor.left,
-                            lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
-                        );
+                        found_instance.set_window_pos((
+                            XY::new(lpmi.rcMonitor.left, lpmi.rcMonitor.top),
+                            XY::new(
+                                lpmi.rcMonitor.right - lpmi.rcMonitor.left,
+                                lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
+                            ),
+                        ));
 
                         instance.store(Some(Arc::new(found_instance)));
                     })
@@ -146,51 +147,68 @@ impl Manager {
             return;
         };
 
-        if self.state == Some(hotkey) {
-            let lpmi = instance.get_monitor_info();
+        let rect = match hotkey {
+            _ if self.state == Some(hotkey) => {
+                let lpmi = instance.get_monitor_info();
 
-            instance.set_window_pos(
-                lpmi.rcMonitor.left,
-                lpmi.rcMonitor.top,
-                lpmi.rcMonitor.right - lpmi.rcMonitor.left,
-                lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
-            );
+                self.state = None;
 
-            self.state = None;
-        } else if hotkey == Hotkey::Tall {
-            let lpmi = instance.get_monitor_info();
+                (
+                    XY::new(lpmi.rcMonitor.left, lpmi.rcMonitor.top),
+                    XY::new(
+                        lpmi.rcMonitor.right - lpmi.rcMonitor.left,
+                        lpmi.rcMonitor.bottom - lpmi.rcMonitor.top,
+                    ),
+                )
+            }
+            Hotkey::Tall => {
+                let lpmi = instance.get_monitor_info();
 
-            let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-            let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+                let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
+                let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config { tall, .. } = config;
+                let Config { tall, .. } = config;
 
-            instance.set_window_pos(center_x - tall.y / 2, center_y - tall.x / 2, tall.y, tall.x);
+                self.state = Some(Hotkey::Tall);
 
-            self.state = Some(Hotkey::Tall);
-        } else if hotkey == Hotkey::Thin {
-            let lpmi = instance.get_monitor_info();
+                (
+                    XY::new(center_x - tall.y / 2, center_y - tall.x / 2),
+                    XY::new(tall.y, tall.x),
+                )
+            }
+            Hotkey::Thin => {
+                let lpmi = instance.get_monitor_info();
 
-            let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-            let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+                let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
+                let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config { thin, .. } = config;
+                let Config { thin, .. } = config;
 
-            instance.set_window_pos(center_x - thin.y / 2, center_y - thin.x / 2, thin.y, thin.x);
+                self.state = Some(Hotkey::Thin);
 
-            self.state = Some(Hotkey::Thin);
-        } else if hotkey == Hotkey::Wide {
-            let lpmi = instance.get_monitor_info();
+                (
+                    XY::new(center_x - thin.y / 2, center_y - thin.x / 2),
+                    XY::new(thin.y, thin.x),
+                )
+            }
+            Hotkey::Wide => {
+                let lpmi = instance.get_monitor_info();
 
-            let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
-            let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
+                let center_x = lpmi.rcMonitor.left.midpoint(lpmi.rcMonitor.right);
+                let center_y = lpmi.rcMonitor.top.midpoint(lpmi.rcMonitor.bottom);
 
-            let Config { wide, .. } = config;
+                let Config { wide, .. } = config;
 
-            instance.set_window_pos(center_x - wide.y / 2, center_y - wide.x / 2, wide.y, wide.x);
+                self.state = Some(Hotkey::Wide);
 
-            self.state = Some(Hotkey::Wide);
-        }
+                (
+                    XY::new(center_x - wide.y / 2, center_y - wide.x / 2),
+                    XY::new(wide.y, wide.x),
+                )
+            }
+        };
+
+        instance.set_window_pos(rect);
 
         self.projector.hotkey_hook(self.state);
         self.slow_mouse(self.state == Some(Hotkey::Tall));

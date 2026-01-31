@@ -20,6 +20,7 @@ use windows::{
 };
 
 use crate::{
+    config::xy::XY,
     utils::UnsafeSync,
     wnd_class::{self, WndClass, wnd_proc},
 };
@@ -50,7 +51,15 @@ impl MinecraftInstance {
         }
     }
 
-    pub fn set_window_pos(&self, left: i32, top: i32, width: i32, height: i32) {
+    pub fn set_window_pos(&self, rect: (XY, XY)) {
+        let (
+            XY { x: left, y: top },
+            XY {
+                x: width,
+                y: height,
+            },
+        ) = rect;
+
         unsafe {
             SetWindowPos(
                 self.hwnd,
