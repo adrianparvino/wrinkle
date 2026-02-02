@@ -87,7 +87,7 @@ impl MinecraftInstance {
                 top,
                 width,
                 height,
-                SWP_NOSENDCHANGING | SWP_FRAMECHANGED,
+                SWP_NOSENDCHANGING,
             )
             .unwrap()
         };
