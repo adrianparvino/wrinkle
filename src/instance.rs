@@ -11,9 +11,9 @@ use windows::{
         UI::WindowsAndMessaging::{
             DefWindowProcW, EnumWindows, GWL_STYLE, GetForegroundWindow, GetWindowLongW,
             GetWindowRect, GetWindowTextW, HSHELL_WINDOWCREATED, HWND_MESSAGE, RegisterClassExW,
-            RegisterShellHookWindow, RegisterWindowMessageW, SWP_FRAMECHANGED, SWP_NOSENDCHANGING,
-            SetWindowLongW, SetWindowPos, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSEXW, WS_BORDER,
-            WS_DLGFRAME, WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_SYSMENU, WS_THICKFRAME,
+            RegisterShellHookWindow, RegisterWindowMessageW, SWP_NOCOPYBITS, SWP_NOSENDCHANGING, SetWindowLongW, SetWindowPos, WINDOW_EX_STYLE,
+            WINDOW_STYLE, WNDCLASSEXW, WS_BORDER, WS_DLGFRAME, WS_MAXIMIZEBOX, WS_MINIMIZEBOX,
+            WS_SYSMENU, WS_THICKFRAME,
         },
     },
     core::{BOOL, PCWSTR},
@@ -87,7 +87,7 @@ impl MinecraftInstance {
                 top,
                 width,
                 height,
-                SWP_NOSENDCHANGING,
+                SWP_NOSENDCHANGING | SWP_NOCOPYBITS,
             )
             .unwrap()
         };
