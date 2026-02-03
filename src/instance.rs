@@ -11,9 +11,10 @@ use windows::{
         UI::WindowsAndMessaging::{
             DefWindowProcW, EnumWindows, GWL_STYLE, GetForegroundWindow, GetWindowLongW,
             GetWindowRect, GetWindowTextW, HSHELL_WINDOWCREATED, HWND_MESSAGE, RegisterClassExW,
-            RegisterShellHookWindow, RegisterWindowMessageW, SWP_NOCOPYBITS, SWP_NOSENDCHANGING, SetWindowLongW, SetWindowPos, WINDOW_EX_STYLE,
-            WINDOW_STYLE, WNDCLASSEXW, WS_BORDER, WS_DLGFRAME, WS_MAXIMIZEBOX, WS_MINIMIZEBOX,
-            WS_SYSMENU, WS_THICKFRAME,
+            RegisterShellHookWindow, RegisterWindowMessageW, SWP_DEFERERASE, SWP_FRAMECHANGED,
+            SWP_NOCOPYBITS, SWP_NOMOVE, SWP_NOREDRAW, SWP_NOSENDCHANGING, SWP_NOSIZE, SWP_NOZORDER,
+            SetWindowLongW, SetWindowPos, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSEXW, WS_BORDER,
+            WS_DLGFRAME, WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_SYSMENU, WS_THICKFRAME,
         },
     },
     core::{BOOL, PCWSTR},
@@ -87,7 +88,7 @@ impl MinecraftInstance {
                 top,
                 width,
                 height,
-                SWP_NOSENDCHANGING | SWP_NOCOPYBITS,
+                SWP_NOSENDCHANGING | SWP_NOCOPYBITS | SWP_DEFERERASE,
             )
             .unwrap()
         };
@@ -119,6 +120,17 @@ impl MinecraftInstanceListenerWindow {
                 | WS_SYSMENU)
                 .0 as i32;
             SetWindowLongW(hwnd, GWL_STYLE, style);
+
+            SetWindowPos(
+                hwnd,
+                None,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
+            )
+            .unwrap();
         }
 
         (self.cb)(hwnd)
